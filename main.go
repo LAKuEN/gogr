@@ -10,8 +10,6 @@ import (
 func main() {
 	args := os.Args
 	if len(args) != 3 {
-		// fmt.Fprintf(os.Stderr, "need to pass the filepath")
-		// os.Exit(1)
 		onError(fmt.Errorf("need to pass the filepath and search string"))
 	}
 	query, filePath := args[1], args[2]
@@ -29,17 +27,35 @@ func main() {
 	}
 	lines := strings.Split(string(bytes), "\n")
 
-	// TODO 指定された文字列に合致する文字列が含まれる行を抽出
-	// var res []string
-	for _, line := range lines {
-		if strings.Contains(line, query) {
-			// res = append(res, line)
-			fmt.Println(line)
-		}
+	// TODO コア数の取得: GOMAXPROCSが自動的にCPU数分の値になるので、それを取ればいい
+	// fmt.Println("NumCPU:", runtime.NumCPU())
+	// fmt.Println("GOMAXPROCS:", runtime.GOMAXPROCS(-1))
+	// TODO コア数で処理対象のデータを分割して並行処理
+
+	// TODO 結果の並び順はファイル内での順序を保ったものにする
+	//      前から順番に一定件数を取り出して処理させ、それらを前方の結果から順に連結していけば良い
+	// FIXME 文字列そのものを配列に格納するのではなく、ポインタのみを格納したい
+	//       コピーを作るのにコストが掛かりそう…
+	matchedLines := extractLines(&lines, query, 0, len(lines))
+
+	for _, l := range matchedLines {
+		fmt.Println(l)
 	}
 }
 
 func onError(err error) {
 	fmt.Fprintf(os.Stderr, err.Error())
 	os.Exit(1)
+}
+
+func extractLines(lines *[]string, query string, startIdx, endIdx int) []string {
+	var matchedLines []string
+	for _, line := range *lines {
+		// TODO 正規表現での検索
+		if strings.Contains(line, query) {
+			matchedLines = append(matchedLines, line)
+		}
+	}
+
+	return matchedLines
 }
